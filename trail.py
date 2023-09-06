@@ -25,7 +25,7 @@ class TrailSplit:
 
     def remove_branch(self) -> TrailStore:
         """Removes the branch, should just leave the remaining following trail."""
-        raise NotImplementedError()
+        return self.following.store
 
 @dataclass
 class TrailSeries:
@@ -44,34 +44,52 @@ class TrailSeries:
         Returns a *new* trail which would be the result of:
         Removing the mountain at the beginning of this series.
         """
-        raise NotImplementedError()
-
+        return self.following.store
+        
     def add_mountain_before(self, mountain: Mountain) -> TrailStore:
         """
         Returns a *new* trail which would be the result of:
         Adding a mountain in series before the current one.
         """
-        raise NotImplementedError()
+        return TrailSeries(mountain=mountain, # create a new TrailSeries with the first mountain being the new mountain
+                           following=Trail(TrailSeries(self.mountain, self.following)) # it is followed by the old TrailSeries
+                           ) 
 
     def add_empty_branch_before(self) -> TrailStore:
         """Returns a *new* trail which would be the result of:
         Adding an empty branch, where the current trailstore is now the following path.
         """
-        raise NotImplementedError()
+        # first action of the trail now is to split so we should return a TrailSplit
+        # top and bottom of the branch will have None as a TrailStore because we're adding an empty branch
+        return TrailSplit(top=Trail(None),
+                          bottom=Trail(None),
+                          following=Trail(TrailSeries(mountain=self.mountain,
+                                                      following=self.following)
+                                            )
+                            )
 
     def add_mountain_after(self, mountain: Mountain) -> TrailStore:
         """
         Returns a *new* trail which would be the result of:
         Adding a mountain after the current mountain, but before the following trail.
         """
-        raise NotImplementedError()
+        return TrailSeries(mountain=self.mountain,
+                           following=Trail(TrailSeries(mountain=mountain,
+                                                       following=self.following)
+                                            )
+                            )
 
     def add_empty_branch_after(self) -> TrailStore:
         """
         Returns a *new* trail which would be the result of:
         Adding an empty branch after the current mountain, but before the following trail.
         """
-        raise NotImplementedError()
+        return TrailSeries(mountain=self.mountain,
+                           following=Trail(TrailSplit(top=Trail(None),
+                                                      bottom=Trail(None),
+                                                      following=self.following)
+                                            )
+                            )
 
 TrailStore = Union[TrailSplit, TrailSeries, None]
 
@@ -85,14 +103,21 @@ class Trail:
         Returns a *new* trail which would be the result of:
         Adding a mountain before everything currently in the trail.
         """
-        raise NotImplementedError()
+        return Trail(TrailSeries(mountain=mountain,
+                                 following=Trail(self.store)
+                                 )
+                    )
 
     def add_empty_branch_before(self) -> Trail:
         """
         Returns a *new* trail which would be the result of:
         Adding an empty branch before everything currently in the trail.
         """
-        raise NotImplementedError()
+        return Trail(TrailSplit(top=Trail(None),
+                                bottom=Trail(None),
+                                following=Trail(self.store)
+                                )
+                    )
 
     def follow_path(self, personality: WalkerPersonality) -> None:
         """Follow a path and add mountains according to a personality."""
