@@ -25,7 +25,9 @@ class TrailSplit:
 
     def remove_branch(self) -> TrailStore:
         """Removes the branch, should just leave the remaining following trail."""
-        raise NotImplementedError()
+
+        # Removes the parrallel trails (branch) and returns the following trail
+        return self.following.store
 
 @dataclass
 class TrailSeries:
@@ -44,34 +46,63 @@ class TrailSeries:
         Returns a *new* trail which would be the result of:
         Removing the mountain at the beginning of this series.
         """
-        raise NotImplementedError()
+        
+        return self.following.store
 
     def add_mountain_before(self, mountain: Mountain) -> TrailStore:
         """
         Returns a *new* trail which would be the result of:
         Adding a mountain in series before the current one.
         """
-        raise NotImplementedError()
+
+        # Adds a mountain before the current Trail series
+        return TrailSeries(mountain=mountain, 
+                           following=Trail(TrailSeries(
+                               mountain=self.mountain, 
+                               following=self.following)))
+
+
 
     def add_empty_branch_before(self) -> TrailStore:
         """Returns a *new* trail which would be the result of:
         Adding an empty branch, where the current trailstore is now the following path.
         """
-        raise NotImplementedError()
+        
+        # top is empy 
+        # bottom is empty
+        # following is the current trail
+        return TrailSplit(top=Trail(None), 
+                          bottom=Trail(None), 
+                          following=Trail(TrailSeries(
+                              mountain=self.mountain, 
+                              following=self.following)))
+
 
     def add_mountain_after(self, mountain: Mountain) -> TrailStore:
         """
         Returns a *new* trail which would be the result of:
         Adding a mountain after the current mountain, but before the following trail.
         """
-        raise NotImplementedError()
+        
+        # current mountain -> new mountain -> following trail
+        return TrailSeries(mountain=self.mountain, 
+                           following=Trail(TrailSeries(
+                               mountain=mountain, 
+                               following=self.following)))
+
 
     def add_empty_branch_after(self) -> TrailStore:
         """
         Returns a *new* trail which would be the result of:
         Adding an empty branch after the current mountain, but before the following trail.
         """
-        raise NotImplementedError()
+        
+        # current mountain -> empty branch -> following trail
+        return TrailSeries(mountain=self.mountain, 
+                           following=Trail(TrailSplit(
+                            top=Trail(None), 
+                            bottom=Trail(None), 
+                            following=self.following)))
 
 TrailStore = Union[TrailSplit, TrailSeries, None]
 
@@ -85,17 +116,24 @@ class Trail:
         Returns a *new* trail which would be the result of:
         Adding a mountain before everything currently in the trail.
         """
-        raise NotImplementedError()
+        
+        return Trail(TrailSeries(mountain=mountain, 
+                                 following=self))
 
     def add_empty_branch_before(self) -> Trail:
         """
         Returns a *new* trail which would be the result of:
         Adding an empty branch before everything currently in the trail.
         """
-        raise NotImplementedError()
+            
+        return Trail(TrailSplit(top=Trail(None), 
+                                    bottom=Trail(None), 
+                                    following=self))
+    
 
     def follow_path(self, personality: WalkerPersonality) -> None:
         """Follow a path and add mountains according to a personality."""
+
         raise NotImplementedError()
 
     def collect_all_mountains(self) -> list[Mountain]:
