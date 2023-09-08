@@ -20,7 +20,7 @@ class WalkerPersonality(ABC):
 
     @abstractmethod
     def select_branch(self, top_branch: Trail, bottom_branch: Trail) -> PersonalityDecision:
-        raise NotImplementedError()
+        pass
 
 class TopWalker(WalkerPersonality):
     def select_branch(self, top_branch: Trail, bottom_branch: Trail) -> PersonalityDecision:

@@ -5,6 +5,8 @@ from mountain import Mountain
 
 from typing import TYPE_CHECKING, Union
 
+from data_structures.linked_stack import LinkedStack
+
 # Avoid circular imports for typing.
 if TYPE_CHECKING:
     from personality import WalkerPersonality
@@ -121,7 +123,115 @@ class Trail:
 
     def follow_path(self, personality: WalkerPersonality) -> None:
         """Follow a path and add mountains according to a personality."""
-        raise NotImplementedError()
+        from personality import PersonalityDecision, TopWalker, BottomWalker, LazyWalker
+
+        current_store = self.store # self is a Trail so self.store will be a TrailSplit, TrailSeries or None
+        
+        stack = LinkedStack()
+
+        while True:
+
+            # if current_store is a TrailSeries, we'll always go through the mountain
+            if isinstance(current_store, TrailSeries):
+                personality.add_mountain(current_store.mountain)
+
+                # now need to update the current_store to the next part of the trail which would be the 'following' part
+                current_store = current_store.following.store # Some TrailStore
+                # current_store.following is a Trail
+                # so current_store.following.store will get the TrailStore which will be a TrailSplit, TrailSeries or None
+
+                if current_store is None:
+                    if stack.is_empty():
+                        break
+                    split = stack.pop()
+                    current_store = split.following.store
+
+            if isinstance(current_store, TrailSplit):
+                stack.push(current_store)
+                decision = personality.select_branch(current_store.top, current_store.bottom)
+
+                if decision == PersonalityDecision.TOP:
+                        current_store = current_store.top.store # Some TrailStore
+                        # current_store.top is a Trail
+
+                elif decision == PersonalityDecision.BOTTOM:
+                    current_store = current_store.bottom.store # Some TrailStore
+                    # current_store.bottom is a Trail
+
+                elif decision == PersonalityDecision.STOP:
+                    break
+
+            if current_store is None:
+                split = stack.pop()
+                current_store = split.following.store
+
+            
+            
+            
+            
+
+        
+        # current_store = self.store # self is a Trail so self.store will be a TrailSplit, TrailSeries or None
+        # num_splits = 0
+
+
+        # # how do we know once we have finished the walk?
+        # # if a mountain is not a branch and its following is Trail(None)
+        # # if the following of a split is Trail(None) - this split must be the outer split
+
+        # if isinstance(current_store, TrailSplit):
+        #     first_split = current_store # need this to keep track of the initial split so we can keep walking just in case we have empty branches for top or bottom
+        #     num_splits += 1
+
+        # if isinstance(current_store, TrailSeries) and isinstance(current_store.following.store, TrailSplit):
+        #     first_split = current_store.following.store
+        #     num_splits += 1
+        
+        # while True:
+        #     if isinstance(current_store, TrailSplit):
+        #         split = True
+        #         initial_split = current_store
+        #         num_splits += 1
+        #         decision = personality.select_branch(current_store.top, current_store.bottom)
+
+        #         if decision == PersonalityDecision.TOP:
+        #             current_store = current_store.top.store # Some TrailStore
+        #             # current_store.top is a Trail
+
+        #         elif decision == PersonalityDecision.BOTTOM:
+        #             current_store = current_store.bottom.store # Some TrailStore
+        #             # current_store.bottom is a Trail
+
+        #         elif decision == PersonalityDecision.STOP:
+        #             break
+                
+        #         if current_store is None:
+        #             current_store = initial_split.following.store
+
+            
+        #     # if current_store is a TrailSeries, we'll always go through the mountain
+        #     if isinstance(current_store, TrailSeries):
+        #         personality.add_mountain(current_store.mountain)
+
+        #         # now need to update the current_store to the next part of the trail which would be the 'following' part
+        #         current_store = current_store.following.store # Some TrailStore
+        #         # current_store.following is a Trail
+        #         # so current_store.following.store will get the TrailStore which will be a TrailSplit, TrailSeries or None
+        #         if current_store is None: # we could be at end of the trail and so should stop. or we could be on some branch and should go to the 'following' part of the split
+        #             if split:
+        #                 current_store = initial_split.following.store
+        #                 if isinstance(current_store, TrailSeries):
+        #                     split = False
+        #             else:
+        #                 break
+
+
+            
+            
+
+            
+         
+
 
     def collect_all_mountains(self) -> list[Mountain]:
         """Returns a list of all mountains on the trail."""
