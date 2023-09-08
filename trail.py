@@ -1,9 +1,11 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from data_structures.linked_stack import LinkedStack
 
 from mountain import Mountain
 
 from typing import TYPE_CHECKING, Union
+
 
 # Avoid circular imports for typing.
 if TYPE_CHECKING:
@@ -134,7 +136,58 @@ class Trail:
     def follow_path(self, personality: WalkerPersonality) -> None:
         """Follow a path and add mountains according to a personality."""
 
-        raise NotImplementedError()
+        from personality import PersonalityDecision
+
+
+        current = self.store
+        stack = LinkedStack()
+
+        while True:
+
+            # If the current trail is a series 
+            if isinstance(current, TrailSeries):
+                # Add the mountain to the personality
+                personality.add_mountain(current.mountain)
+                # Move to the next trail
+                current = current.following.store
+                
+                # If the next trail is empty
+                if current is None: 
+                    # If the stack is empty, break
+                    if stack.is_empty():
+                        break
+                    # Else, pop the stack and move to the next trail
+                    # Pop to get the TrailSplit object from the stack
+                    split = stack.pop()
+                    current = split.following.store
+            
+
+            # If the current trail is a split
+            if isinstance(current, TrailSplit):
+                # Push the current trail to the stack
+                stack.push(current)
+                # Get the personality type
+                decision = personality.select_branch(current.top, current.bottom)
+
+                # Assign current to the next trail
+                if decision == PersonalityDecision.TOP:
+                    current = current.top.store
+                elif decision == PersonalityDecision.BOTTOM:
+                    current = current.bottom.store
+                else:
+                    break
+            
+            # If the current trail is empty
+            if current is None:
+                # Get the next trail object from the stack
+                split = stack.pop()
+                # update the current to that trail
+                current = split.following.store
+            
+
+        
+              
+        
 
     def collect_all_mountains(self) -> list[Mountain]:
         """Returns a list of all mountains on the trail."""
