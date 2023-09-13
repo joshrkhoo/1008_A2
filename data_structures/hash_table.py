@@ -217,9 +217,12 @@ class LinearProbeTable(Generic[K, V]):
         order).
         :complexity: O(N * (str(key) + str(value))) where N is the table size
         """
-        result = ""
+        result = "["
         for item in self.array:
             if item is not None:
                 (key, value) = item
-                result += "(" + str(key) + "," + str(value) + ")\n"
+                result += "(" + str(key) + "," + str(value) + "), "
+            else:
+                result += "None, "
+        result += "]"
         return result
