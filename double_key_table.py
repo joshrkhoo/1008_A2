@@ -177,9 +177,6 @@ class DoubleKeyTable(Generic[K1, K2, V]):
 
 
 
-
-
-
     def iter_keys(self, key:K1|None=None) -> Iterator[K1|K2]:
         """
         key = None:
@@ -231,14 +228,70 @@ class DoubleKeyTable(Generic[K1, K2, V]):
 
         :raises KeyError: when the key doesn't exist.
         """
-        raise NotImplementedError()
+        # key1, key2 = key # separate the keys
+
+        # pos = self._linear_probe(key1, key2, False) # will be a tuple of positions
+
+        # # if key1 doesn't exist, the KeyError will be raised by linear probe method from DKT
+        # # if key1 exists but key2 doesn't exist, the KeyError will also be raised by linear prove method from DKT as a result of KeyError in the inner table
+
+        # pos1, pos2 = pos
+
+        # # go to pos1 in s
+
+        # inner_table = self.outer_table[pos1][1] # don't think this actually works because self.outer_table is a LPT, not an array
+        # data = inner_table[pos2][1]
+
+        # return data
+    
+        # alternatively, could just use the methods in LPT such as __getitem__
+
+        key1, key2 = key
+
+        # KeyError will be raised by linear probe method in LPT if the key doesn't exist
+        inner_table = self.outer_table[key1] # using __getitem__ from the LPT class
+        value = inner_table[key2]
+
+        return value
 
     def __setitem__(self, key: tuple[K1, K2], data: V) -> None:
         """
         Set an (key, value) pair in our hash table.
         """
+        # separate the keys
+        key1, key2 = key
 
-        raise NotImplementedError()
+        # check if the key is in the hash table
+        # if key1 in self.outer_table: # using __contains__ from LPT
+        #     # get the inner table
+        #     inner_table = self.outer_table[key1] # looking for the inner table using __getitem__ from LPT
+        #     inner_table[key2] = data
+
+        # inner_table = LinearProbeTable(self.internal_sizes)
+        # inner_table.hash = lambda k: self.hash2(k, inner_table)
+        # self.outer_table[key1] = inner_table
+        # inner_table[key2] = data
+
+        increment_count = True # assume we are adding a new (key, value) pair
+
+        if key1 in self.outer_table:
+            inner_table = self.outer_table[key1]
+            if key2 in inner_table: # if key2 is also in the table then we should not increment the count because we would be updating the data rather than adding new
+                increment_count = False
+
+        else:
+            inner_table = LinearProbeTable(self.internal_sizes)
+            inner_table.hash = lambda k: self.hash2(k, inner_table)
+            self.outer_table[key1] = inner_table
+
+        inner_table[key2] = data
+
+        if increment_count:
+            self.count += 1
+
+
+
+        
 
     def __delitem__(self, key: tuple[K1, K2]) -> None:
         """
@@ -246,7 +299,22 @@ class DoubleKeyTable(Generic[K1, K2, V]):
 
         :raises KeyError: when the key doesn't exist.
         """
-        raise NotImplementedError()
+        key1, key2 = key
+
+        # if key1 in self.outer_table:
+        #     inner_table = self.outer_table[key1]
+        #     if key2 in inner_table:
+        #         del inner_table[key2]
+    
+        #     if len(inner_table) == 0:
+        #         del self.outer_table[key1]
+
+        # linear probe method from LPT will raise the KeyErrors 
+        inner_table = self.outer_table[key1]
+        del inner_table[key2]
+
+        if len(inner_table) == 0:
+            del self.outer_table[key1]
 
     def _rehash(self) -> None:
         """
@@ -263,7 +331,7 @@ class DoubleKeyTable(Generic[K1, K2, V]):
         """
         Return the current size of the table (different from the length)
         """
-        raise NotImplementedError()
+        return self.outer_table.table_size
 
     def __len__(self) -> int:
         """
@@ -272,7 +340,8 @@ class DoubleKeyTable(Generic[K1, K2, V]):
 
         # should return the total number of items across all sub-tables
         # so return the number of values in the outer table + the number of values in the inner table        
-        raise NotImplementedError()
+    
+        return self.count
 
     def __str__(self) -> str:
         """
