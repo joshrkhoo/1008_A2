@@ -33,18 +33,15 @@ class DoubleKeyTable(Generic[K1, K2, V]):
         else:
             self.sizes = self.TABLE_SIZES
 
-        # create the outer table first before checking the internal_sizes
-        self.outer_table = LinearProbeTable(self.sizes) # LinearProbeTable has its own self.count
-        self.outer_table.hash = lambda k: self.hash1(k) # set the outer table's hash function to hash1
-        # will allow us to use the linear probing method in LinearProbeTable
-        
-
-        # table has been made so we can replace the existing TABLE_SIZES for the internal_sizes if necessary
         if internal_sizes is not None:
             self.internal_sizes = internal_sizes
         else:
             self.internal_sizes = self.TABLE_SIZES
 
+        self.outer_table = LinearProbeTable(self.sizes) # LinearProbeTable has its own self.count
+        self.outer_table.hash = lambda k: self.hash1(k) # set the outer table's hash function to hash1
+        # will allow us to use the linear probing method in LinearProbeTable
+        
         self.count = 0 # count for the double key table (should count all the values in all tables (top and bottom))
 
 
@@ -141,7 +138,7 @@ class DoubleKeyTable(Generic[K1, K2, V]):
         else:
             table = self.outer_table[key]
 
-        for item in table:
+        for item in table.array:
             if item is not None:
                 yield item[0]
 
@@ -152,10 +149,10 @@ class DoubleKeyTable(Generic[K1, K2, V]):
         """
         # return list(self.iter_keys(key))
 
-        key_iterator = self.iter_keys(key)
+        key_iterator = self.iter_keys(key) 
 
         keys = []
-        for key in key_iterator:
+        for key in key_iterator: # we can iterate over our iterator
             keys.append(key)
 
         return keys
@@ -169,21 +166,63 @@ class DoubleKeyTable(Generic[K1, K2, V]):
         key = k:
             Returns an iterator of all values in the bottom-hash-table for k.
         """
+        # if key is None:
+        #     table = self.outer_table
+        # else:
+        #     table = self.outer_table[key]
+
+        # for item in table.array:
+        #     if item is not None:
+        #         yield item[1]
+
+        # if key is not None:
+        #     table = self.outer_table[key]
+        #     for item in table.array:
+        #         if item is not None:
+        #             yield item[1]
+    
+        # if key is None:
+        #     table = self.outer_table
+        #     for outer_item in table.array:
+        #         if outer_item is not None:
+        #             for inner_item in table[1].array:
+        #                 if inner_item is not None:
+        #                     yield inner_item[1]
+        
         if key is None:
             table = self.outer_table
         else:
             table = self.outer_table[key]
 
-        for item in table:
-            if item is not None:
-                yield item[1]
+        if key is None:
+            for outer_item in table.array:
+                if outer_item is not None:
+                    inner_table = outer_item[1]
+                    for inner_item in inner_table.array:
+                        if inner_item is not None:
+                            yield inner_item[1]
+        else:
+            for item in table.array:
+                if item is not None:
+                    yield item[1]
+
+
+        
 
     def values(self, key:K1|None=None) -> list[V]:
         """
         key = None: returns all values in the table.
         key = x: returns all values for top-level key x.
         """
-        return list(self.iter_values(key))
+        # return list(self.iter_values(key))
+
+        values = []
+        value_iterator = self.iter_values(key)
+
+        for value in value_iterator: # we can iterate over our iterator
+            values.append(value)
+
+        return values
 
     def __contains__(self, key: tuple[K1, K2]) -> bool:
         """
@@ -204,24 +243,6 @@ class DoubleKeyTable(Generic[K1, K2, V]):
 
         :raises KeyError: when the key doesn't exist.
         """
-        # key1, key2 = key # separate the keys
-
-        # pos = self._linear_probe(key1, key2, False) # will be a tuple of positions
-
-        # # if key1 doesn't exist, the KeyError will be raised by linear probe method from DKT
-        # # if key1 exists but key2 doesn't exist, the KeyError will also be raised by linear prove method from DKT as a result of KeyError in the inner table
-
-        # pos1, pos2 = pos
-
-        # # go to pos1 in s
-
-        # inner_table = self.outer_table[pos1][1] # don't think this actually works because self.outer_table is a LPT, not an array
-        # data = inner_table[pos2][1]
-
-        # return data
-    
-        # alternatively, could just use the methods in LPT such as __getitem__
-
         key1, key2 = key
 
         # KeyError will be raised by linear probe method in LPT if the key doesn't exist
@@ -234,24 +255,14 @@ class DoubleKeyTable(Generic[K1, K2, V]):
         """
         Set an (key, value) pair in our hash table.
         """
+        # implementation 1 - using methods from LPT
         # separate the keys
         key1, key2 = key
-
-        # check if the key is in the hash table
-        # if key1 in self.outer_table: # using __contains__ from LPT
-        #     # get the inner table
-        #     inner_table = self.outer_table[key1] # looking for the inner table using __getitem__ from LPT
-        #     inner_table[key2] = data
-
-        # inner_table = LinearProbeTable(self.internal_sizes)
-        # inner_table.hash = lambda k: self.hash2(k, inner_table)
-        # self.outer_table[key1] = inner_table
-        # inner_table[key2] = data
-
         increment_count = True # assume we are adding a new (key, value) pair
 
-        if key1 in self.outer_table:
-            inner_table = self.outer_table[key1]
+        # check if the key is in the hash table
+        if key1 in self.outer_table: # using __contains__ from LPT
+            inner_table = self.outer_table[key1] # looking for the inner table using __getitem__ from LPT
             if key2 in inner_table: # if key2 is also in the table then we should not increment the count because we would be updating the data rather than adding new
                 increment_count = False
 
@@ -264,6 +275,33 @@ class DoubleKeyTable(Generic[K1, K2, V]):
 
         if increment_count:
             self.count += 1
+
+    
+        # # implementation 2 - accessing the array of the LPTs (unsure)
+        # # separate the keys
+        # key1, key2 = key
+        # pos = self._linear_probe(key1, key2, True) # will create an inner table if key1 is not in the table
+        # pos1, pos2 = pos
+
+        # if self.outer_table.array[pos1] is None:
+        #     self.count += 1 # increment count of DKT
+        #     self.outer_table.count += 1 # increment count of LPT
+
+        # # inner_table = self.outer_table[key1]
+        # inner_table = self.outer_table.array[pos1][1]
+
+        # if inner_table.array[pos2] is None:
+        #     self.count += 1
+        #     inner_table.count += 1
+
+        # # inner_table[key2] = data
+        # inner_table.array[pos2] = (key2, data)
+
+        # # self.outer_table[key1] = inner_table
+        # self.outer_table.array[pos1] = (key1, inner_table)
+
+
+
 
 
 
