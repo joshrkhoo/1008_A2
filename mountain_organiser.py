@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from mountain import Mountain
 
-from algorithms.binary_search import binary_search, _binary_search_aux
+from algorithms.binary_search import binary_search, _binary_search_aux, binary_search_mountains, _binary_search_mountains_aux
 from algorithms.mergesort import mergesort, merge
 
 class MountainOrganiser:
@@ -19,7 +19,7 @@ class MountainOrganiser:
         if mountain not in self.organiser: # O(1)
             raise KeyError # O(1)
         
-        pos = binary_search(self.organiser, mountain.difficulty_level) # O(binary_search)
+        pos = binary_search_mountains(self.organiser, mountain) # O(binary_search_mountains)
         
         return pos
     
@@ -33,8 +33,7 @@ class MountainOrganiser:
         # sort mountains
         # merge sorted mountains with self.organiser
 
-        sorted_mountains = mergesort(mountains, key=lambda mountain: mountain.difficulty_level)
-        merge(self.organiser, sorted_mountains)
-
+        sorted_mountains = mergesort(mountains, key=lambda mountain: (mountain.difficulty_level, mountain.name))
+        self.organiser = merge(self.organiser, sorted_mountains, key=lambda mountain: (mountain.difficulty_level, mountain.name))
 
     
