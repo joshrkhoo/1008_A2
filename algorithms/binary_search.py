@@ -28,7 +28,7 @@ def _binary_search_aux(l: list[T], item: T, lo: int, hi: int) -> int:
     mid = (hi + lo) // 2
     if l[mid] > item:
         # Item would be before mid
-        return _binary_search_aux(l, item, lo, mid)
+        return _binary_search_aux(l, item, lo, mid-1)
     elif l[mid] < item:
         # Item would be after mid
         return _binary_search_aux(l, item, mid+1, hi)
