@@ -163,7 +163,32 @@ class Trail:
             
     def collect_all_mountains(self) -> list[Mountain]:
         """Returns a list of all mountains on the trail."""
-        raise NotImplementedError()
+        # could use recursion?
+
+        all_mountains = []
+
+        # base case
+        if self.store is None:
+            return all_mountains
+
+        elif isinstance(self.store, TrailSeries):
+            all_mountains.append(self.store.mountain)
+            following_mountains = self.store.following.collect_all_mountains()
+            all_mountains.extend(following_mountains)
+                
+
+        elif isinstance(self.store, TrailSplit):
+            # collect_all_mountains on top trail
+            top_mountains = self.store.top.collect_all_mountains()
+            # collect_all_mountains on bot trail
+            bottom_mountains = self.store.bottom.collect_all_mountains()
+            # collect_all_mountains on following trail
+            following_mountains = self.store.following.collect_all_mountains()
+            all_mountains.extend(top_mountains)
+            all_mountains.extend(bottom_mountains)
+            all_mountains.extend(following_mountains)
+        
+        return all_mountains
 
     def difficulty_maximum_paths(self, max_difficulty: int) -> list[list[Mountain]]: # Input to this should not exceed k > 50, at most 5 branches.
         # 1008/2085 ONLY!

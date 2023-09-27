@@ -33,7 +33,8 @@ class MountainOrganiser:
         # sort mountains
         # merge sorted mountains with self.organiser
 
-        sorted_mountains = mergesort(mountains, key=lambda mountain: (mountain.difficulty_level, mountain.name))
-        self.organiser = merge(self.organiser, sorted_mountains, key=lambda mountain: (mountain.difficulty_level, mountain.name))
+        sorted_mountains = mergesort(mountains, key=lambda mountain: (mountain.difficulty_level, mountain.name)) # O(m*log(m)) where m is the number of mountains we're adding
+        self.organiser = merge(self.organiser, sorted_mountains, key=lambda mountain: (mountain.difficulty_level, mountain.name)) # O(n) where n is the total number of mountains now (i think)
+                                                                                                                                  # because we're combining 2 lists
 
     
