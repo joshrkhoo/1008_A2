@@ -9,7 +9,9 @@ class TestInfiniteHash(unittest.TestCase):
     def test_example(self):
         ih = InfiniteHashTable()
         ih["lin"] = 1
+        print(ih)
         ih["leg"] = 2
+        print(ih)
         self.assertEqual(ih.get_location("lin"), [4, 1])
         self.assertEqual(ih.get_location("leg"), [4, 23])
         self.assertEqual(len(ih), 2)
