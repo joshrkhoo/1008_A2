@@ -39,6 +39,13 @@ class InfiniteHashTable(Generic[K, V]):
         Get the value at a certain key
 
         :raises KeyError: when the key doesn't exist.
+
+        Complexity:
+            Best case = O(1)
+                - item is not a sub table
+            Worst case = O(l)
+                - l is the length of the key
+                - This is because we need to recursively call the function l times
         """
         
         pos = self.hash(key)
@@ -48,6 +55,9 @@ class InfiniteHashTable(Generic[K, V]):
         if item is None:
             raise KeyError('Key does not exist')
 
+        # Get the value from the sub table
+            # item can be a sub table
+            # this is a recursive call
         if isinstance(item, InfiniteHashTable):
             return item[key]
 
@@ -58,6 +68,13 @@ class InfiniteHashTable(Generic[K, V]):
     def __setitem__(self, key: K, value: V) -> None:
         """
         Set an (key, value) pair in our hash table.
+
+        Complexity:
+            Best case = O(1)
+                - No conflicts
+            Worst case = O(l)
+                - l is the length of the key
+                - This is because we need to recursively call the function l times 
         """
 
         pos = self.hash(key)
@@ -100,6 +117,14 @@ class InfiniteHashTable(Generic[K, V]):
         Deletes a (key, value) pair in our hash table.
 
         :raises KeyError: when the key doesn't exist.
+
+        Complexity: 
+            Best case = O(1)
+                - item is not a sub table
+            Worst case = O(l)
+                - l is the length of the key
+                    - This is because we may need to recursively call the function l times to get the key
+
         """
         pos = self.hash(key)
 
@@ -117,6 +142,7 @@ class InfiniteHashTable(Generic[K, V]):
             if len(item) == 0:
                 self.table[pos] = None
 
+            # Instead of having an infinitehashtable instance, we can just have the key and value
             if len(item) == 1:
                 # we need to move the item up
                 for item in item.table:
@@ -135,6 +161,8 @@ class InfiniteHashTable(Generic[K, V]):
     def __len__(self) -> int:
         """
         Returns the number of items in the hash table.
+
+        Complexity: Best/Worst case = O(1)
         """
         return self.count
 
@@ -171,6 +199,10 @@ class InfiniteHashTable(Generic[K, V]):
         Get the sequence of positions required to access this key.
 
         :raises KeyError: when the key doesn't exist.
+
+        Complexity: Best/Worst case = O(n)
+            - n is the length of the key
+            - This is because we need to recursively call the function n times
         """
 
         pos = self.hash(key)
@@ -185,10 +217,14 @@ class InfiniteHashTable(Generic[K, V]):
         if self.table[pos] is None:
             raise KeyError('Key does not exist')
         
-        # 
+        # Recursively call the function if we have a sub table
+            # This is done to get the sequence of positions required to access this key
         if isinstance(self.table[pos], InfiniteHashTable):
+            # adds the current position and list of positions from the recursive call together
+                # then returns the list when the recursive call is finished
             return [pos] + self.table[pos].get_location(key)
 
+        # No sub table, only the key, return the position
         if self.table[pos][0] == key:
             return [pos]
         
@@ -209,25 +245,57 @@ class InfiniteHashTable(Generic[K, V]):
         else:
             return True
 
+
+
     def sort_keys(self, current=None) -> list[str]:
         """
         Returns all keys currently in the table in lexicographically sorted order.
+            
+        Simplified Complexity:
+            Best Case = O(1)
+                - No sub table to traverse
+                - For loop is constant O(1) due to the table size being constant
+            Worst case = O(N)
+                - N is the number of keys in the table
+                    - The for loop is constant O(1) due to the table size being constant
+                    - Recursively calling the function is O(N) due to the number of keys in the table
+                    - All other operations are constant O(1)
+
         """
+
+
         if current is None:
             current = []
 
+        # Add the last item in the table
+            # This will only occur when the conflicts keep occuring until one of the keys length is less than the current level
+                # Looking at lin and linked, when the level is 3, the key lin will be in the last slot of the table
         if self.table[self.TABLE_SIZE-1] is not None:
             current.append(self.table[self.TABLE_SIZE-1][0])
 
+        # Iterate though each slot in the table
         for i in range(self.TABLE_SIZE):
-            pos = (i-97)%self.TABLE_SIZE
+
+            # Eseentially mapping indexes to lower case letters 'a' to 'z' 
+                # And finding the position in the table by using modulo
+            pos = (i+97)%self.TABLE_SIZE
+
+            # Skip the last item in the table
             if pos == self.TABLE_SIZE-1:
                 continue
+
+            # Get the item at pos
             item = self.table[pos]
+
+            # Skip if no item
             if item is None:
                 continue
+            
+            # If the item is a sub table, recursively call the function
+                # This is done to get the keys in the sub table
             elif isinstance(item, InfiniteHashTable):
                 item.sort_keys(current)
+            # Otherwise, add the key to the list
             else:
                 current.append(item[0])
 
