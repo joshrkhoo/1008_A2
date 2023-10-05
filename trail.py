@@ -134,7 +134,6 @@ class Trail:
             # if current_store is a TrailSeries, we'll always go through the mountain
             if isinstance(current_store, TrailSeries):
                 personality.add_mountain(current_store.mountain)
-
                 # now need to update the current_store to the next part of the trail which would be the 'following' part
                 current_store = current_store.following.store # Some TrailStore
                 # current_store.following is a Trail
@@ -163,8 +162,6 @@ class Trail:
             
     def collect_all_mountains(self) -> list[Mountain]:
         """Returns a list of all mountains on the trail."""
-        # could use recursion?
-
         all_mountains = []
 
         # base case
@@ -175,7 +172,6 @@ class Trail:
             all_mountains.append(self.store.mountain)
             following_mountains = self.store.following.collect_all_mountains()
             all_mountains.extend(following_mountains)
-                
 
         elif isinstance(self.store, TrailSplit):
             # collect_all_mountains on top trail
@@ -192,7 +188,45 @@ class Trail:
 
     def difficulty_maximum_paths(self, max_difficulty: int) -> list[list[Mountain]]: # Input to this should not exceed k > 50, at most 5 branches.
         # 1008/2085 ONLY!
-        raise NotImplementedError()
+        
+        current_store = self.store
+        paths = []
+        mountains = []
+
+        stack = LinkedStack()
+
+        while True:
+            if isinstance(current_store, TrailSeries):
+                if current_store.mountain.difficulty_level <= max_difficulty:
+                    mountains.append(current_store.mountain)
+                    current_store = current_store.following.store
+            elif isinstance(current_store, TrailSplit):
+                stack.push(current_store)
+                top_paths = []
+                bot_paths = []
+                following_paths = []
+    
+
+
+        # paths = []
+        # mountains_out_of_split = []
+
+        # if isinstance(self.store, TrailSeries):
+        #     if max_difficulty >= self.store.mountain.difficulty_level:
+        #         mountains.append(self.store.mountain)
+        #         following_mountains = self.store.following.difficulty_maximum_paths(max_difficulty)
+        #         mountains.extend(following_mountains)
+        #     else:
+        #         # stop, don't go any further
+        # elif isinstance(self.store, TrailSplit):
+        #     self.store.top.difficulty_maximum_paths(max_difficulty)
+        #     self.store.bottom.difficulty_maximum_paths(max_difficulty)
+
+
+
+
+
+
 
     def difficulty_difference_paths(self, max_difference: int) -> list[list[Mountain]]: # Input to this should not exceed k > 50, at most 5 branches.
         # 1054 ONLY!
