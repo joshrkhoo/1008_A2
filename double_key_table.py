@@ -138,7 +138,7 @@ class DoubleKeyTable(Generic[K1, K2, V]):
 
         Complexity:
         Best case is O(n) where n is the number of elements in the top table. Occurs when the key is None
-        Worst case is O(hash(key) + n) where n is the number of elements in the bottom table. Occurs when there is a key
+        Worst case is O(hash(key) + m) where m is the number of elements in the bottom table. Occurs when there is a key
         """
 
         if key is None:
@@ -167,7 +167,7 @@ class DoubleKeyTable(Generic[K1, K2, V]):
 
         Complexity:
         Best case is O(n) where n is the number of elements in the top table. Occurs when the key is None
-        Worst case is O(hash(key) + n) where n is the number of elements in the bottom table. Occurs when there is a key
+        Worst case is O(hash(key) + m) where m is the number of elements in the bottom table. Occurs when there is a key
         """
         # return list(self.iter_keys(key))
 
@@ -190,10 +190,10 @@ class DoubleKeyTable(Generic[K1, K2, V]):
 
         Complexity:
         Best case is O(hash(key) + n) where n is the number of elements in the outer table
-        Occurs when there is no key
+        Occurs when there is a key
         Worst case is O(n*m) where n is the number of elements in the outer table and m
         is the number of elements in the lower table
-        Occurs when there is a key
+        Occurs when there is no key
         """
         
         if key is None:
@@ -222,8 +222,8 @@ class DoubleKeyTable(Generic[K1, K2, V]):
         Best case is O(hash(key) + n + k) where n is the number of elements in the outer table
         and k is the number of elements in the generator
         Occurs when there is no key
-        Worst case is O(n*m + k) where n is the number of elements in the outer table, m
-        is the number of elements in the lower table and k is the number of elements in the generator
+        Worst case is O(n*m) where n is the number of elements in the outer table, m
+        is the number of elements in the lower table
         Occurs when there is a key
         """
         values = []

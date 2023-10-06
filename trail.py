@@ -122,9 +122,16 @@ class Trail:
                     )
 
     def follow_path(self, personality: WalkerPersonality) -> None:
-        """Follow a path and add mountains according to a personality."""
-        from personality import PersonalityDecision, TopWalker, BottomWalker, LazyWalker
+        """Follow a path and add mountains according to a personality.
+        
+        Complexity:
+        Best = O(n) where n is the number of TrailSeries in the path. This occurs when the path has no TrailSplits
+        Worst = O(n + m) where n is the number of TrailSeries and m is the number of TrailSplits in the path
 
+        """
+        from personality import PersonalityDecision, TopWalker, BottomWalker, LazyWalker
+        
+        # operations are all O(1)
         current_store = self.store # self is a Trail so self.store will be a TrailSplit, TrailSeries or None
         
         stack = LinkedStack() # use a stack to explore the parts of a split
@@ -133,7 +140,7 @@ class Trail:
         while True:
             # if current_store is a TrailSeries, we'll always go through the mountain
             if isinstance(current_store, TrailSeries):
-                personality.add_mountain(current_store.mountain)
+                personality.add_mountain(current_store.mountain) # O(1)
                 # now need to update the current_store to the next part of the trail which would be the 'following' part
                 current_store = current_store.following.store # Some TrailStore
                 # current_store.following is a Trail
@@ -190,41 +197,63 @@ class Trail:
         # 1008/2085 ONLY!
         
         current_store = self.store
-        paths = []
-        mountains = []
-
+        
         stack = LinkedStack()
+        seen = []
+        paths = []
 
         while True:
             if isinstance(current_store, TrailSeries):
                 if current_store.mountain.difficulty_level <= max_difficulty:
-                    mountains.append(current_store.mountain)
+                    seen.append(current_store.mountain)
                     current_store = current_store.following.store
+                else:
+                    break
+
             elif isinstance(current_store, TrailSplit):
                 stack.push(current_store)
-                top_paths = []
-                bot_paths = []
-                following_paths = []
+                current_store = current_store.top.store
+
+            elif current_store is None:
+                if stack.is_empty():
+                    break
+                split = stack.pop()
+                current_store = split.following.store
+        
+        paths.append(seen)
+        
+        return paths
+
+
+        # current_store = self.store
+        # seen = []
+        # valid = []
+
+        # if current_store is None:
+        #     return valid
+
+        # # check if TrailSeries
+        # if isinstance(current_store, TrailSeries):
+        #     # check difficulty
+        #     if current_store.mountain.difficulty_level <= max_difficulty:
+        #         seen.append(current_store.mountain)
+        #         valid_following = current_store.following.difficulty_maximum_paths(max_difficulty)
+        #         for path in valid_following:
+            
+            
+        # if isinstance(current_store, TrailSplit):
+        #     # explore top
+        #     valid_top = current_store.top.difficulty_maximum_paths(max_difficulty)
+        #     # explore bot
+        #     valid_bot = current_store.bottom.difficulty_maximum_paths(max_difficulty)
+        #     # explore following
+        #     valid_following = current_store.following.difficulty_maximum_paths(max_difficulty)
+            
+        
+        # return valid
     
-
-
-        # paths = []
-        # mountains_out_of_split = []
-
-        # if isinstance(self.store, TrailSeries):
-        #     if max_difficulty >= self.store.mountain.difficulty_level:
-        #         mountains.append(self.store.mountain)
-        #         following_mountains = self.store.following.difficulty_maximum_paths(max_difficulty)
-        #         mountains.extend(following_mountains)
-        #     else:
-        #         # stop, don't go any further
-        # elif isinstance(self.store, TrailSplit):
-        #     self.store.top.difficulty_maximum_paths(max_difficulty)
-        #     self.store.bottom.difficulty_maximum_paths(max_difficulty)
-
-
-
-
+    
+        
 
 
 
