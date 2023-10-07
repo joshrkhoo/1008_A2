@@ -45,7 +45,7 @@ class TestDoubleHash(unittest.TestCase):
 
         del dt["Tim", "Jen"]
         # We can't do this as it would create the table.
-        # self.assertEqual(dt._linear_probe("Het", "Bob", True), (1, 3))
+        self.assertEqual(dt._linear_probe("Het", "Bob", True), (1, 3))
         del dt["Tim", "Kat"]
         # Deleting again should make space for Het.
         dt["Het", "Bob"] = 4
@@ -108,11 +108,16 @@ class TestDoubleHash(unittest.TestCase):
 
         key_iterator = dt.iter_keys()
         value_iterator = dt.iter_values()
+        may_key_iterator = dt.iter_keys("May")
+        may_value_iterator = dt.iter_values("May")
 
         key = next(key_iterator)
         self.assertIn(key, ["May", "Kim"])
+        self.assertIn(next(may_key_iterator), ["Jim"])
+
         value = next(value_iterator)
         self.assertIn(value, [1, 2])
+        self.assertIn(next(may_value_iterator), [1])
 
         del dt["May", "Jim"]
         del dt["Kim", "Tim"]
