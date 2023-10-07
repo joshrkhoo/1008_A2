@@ -120,7 +120,18 @@ class Trail:
                                     following=self))
 
     def follow_path(self, personality: WalkerPersonality) -> None:
-        """Follow a path and add mountains according to a personality."""
+        """
+        Follow a path and add mountains according to a personality.
+        
+        :complexity:
+        Best/Worst case = O(n)
+            - n is the number of trailseries in the path
+            - Occurs when no splits are encountered / i.e. the shortest path is taken
+        Worst case = O(n+m)
+            - n is the number of trailseries
+            - m is the number of trailsplits
+            - Occurs when encountering a splits / i.e. the longest path is taken
+        """
 
         from personality import PersonalityDecision
 
