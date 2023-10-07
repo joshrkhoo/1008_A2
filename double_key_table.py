@@ -110,15 +110,42 @@ class DoubleKeyTable(Generic[K1, K2, V]):
             Returns an iterator of all top-level keys in hash table
         key = k:
             Returns an iterator of all keys in the bottom-hash-table for k.
+
+        :complexity:
+        Best case = O(n) where 
+            - n is the number of elements in the top table
+            - Occurs when the key is None
+        Worst case = O(hash(key) + m)
+            - m is the number of elements in the bottom table
+            - Occurs when there is a key
         """
-        raise NotImplementedError()
+
+        if key is None:
+            table = self.outer_table
+        else:
+            table = self.outer_table[key]
+
+        for item in table.array:
+            if item is not None:
+                yield item[0]
 
     def keys(self, key:K1|None=None) -> list[K1|K2]:
         """
         key = None: returns all top-level keys in the table.
         key = x: returns all bottom-level keys for top-level key x.
+        Complexity:
+        Best case is O(n) where n is the number of elements in the top table. Occurs when the key is None
+        Worst case is O(hash(key) + m) where m is the number of elements in the bottom table. Occurs when there is a key
         """
-        raise NotImplementedError()
+        # return list(self.iter_keys(key))
+
+        key_iterator = self.iter_keys(key) 
+
+        keys = []
+        for key in key_iterator: # we can iterate over our iterator
+            keys.append(key)
+
+        return keys
 
     def iter_values(self, key:K1|None=None) -> Iterator[V]:
         """
@@ -126,15 +153,66 @@ class DoubleKeyTable(Generic[K1, K2, V]):
             Returns an iterator of all values in hash table
         key = k:
             Returns an iterator of all values in the bottom-hash-table for k.
+        :complexity:
+        Best case: O(hash(key) + M)
+            - M is the number of keys in the inner table.
+            - Occurs when there is a key given and the key is in the outer table.
+        
+        Worst case: O(N*M)
+            - N is the number of keys in the outer table.
+            - M is the number of keys in the inner table.
+            - Occurs when there is no key given and we have to iterate through inner and outter table.
         """
-        raise NotImplementedError()
+        # Get all values in all inner tables
+        # If key is None, iterate through all top-level keys
+        if key is None:
+            # Iterate through outter table
+            for outer_tup in self.outer_table.array:
+                if outer_tup is not None:
+                    # Iterate through inner table
+                    # outer_tup[1] is the inner table
+                    for inner_tup in outer_tup[1].array:
+                        if inner_tup is not None:
+                            yield inner_tup[1]
+
+
+        # Get all values in the single inner table pointed to by key
+        # Else, iterate through the bottom hash table pointed to by key
+        else:
+            # if key is not in the outer table, raise a key error
+            if key not in self.outer_table:
+                raise KeyError(key)
+
+            # get the inner table for key
+            sub_table = self.outer_table[key]
+
+            # iterate through the inner table
+            for tup in sub_table.array:
+                if tup is not None:
+                    yield tup[1]
 
     def values(self, key:K1|None=None) -> list[V]:
         """
         key = None: returns all values in the table.
         key = x: returns all values for top-level key x.
+
+        :complexity:
+        Best case = O(hash(key) + n + k)
+            - n is the number of elements in the outer table
+            - k is the number of elements in the generator
+            - Occurs when there is no key
+        Worst case = O(n*m) 
+            - n is the number of elements in the outer table
+            - m is the number of elements in the lower table
+            - Occurs when there is a key
         """
-        raise NotImplementedError()
+        values = []
+        value_iterator = self.iter_values(key)
+
+        for value in value_iterator: # we can iterate over our iterator
+            values.append(value)
+
+        return values
 
     def __contains__(self, key: tuple[K1, K2]) -> bool:
         """
@@ -154,50 +232,89 @@ class DoubleKeyTable(Generic[K1, K2, V]):
         Get the value at a certain key
 
         :raises KeyError: when the key doesn't exist.
+        :complexity: See linear probe.
         """
-        raise NotImplementedError()
+
+        # K1 = key[0], K2 = key[1]
+        k1, k2 = key
+
+        # KeyError is raised by the LinearProbeTable class
+        sub_table = self.outer_table[k1]
+        return sub_table[k2]
 
     def __setitem__(self, key: tuple[K1, K2], data: V) -> None:
         """
         Set an (key, value) pair in our hash table.
+        :raises FullError: when the table cannot be resized further.
+        :complexity: see linear probe.
         """
 
-        raise NotImplementedError()
+        k1, k2 = key
+
+        # If key1 is not in the outer table, create a new inner table for key1
+        if k1 not in self.outer_table:
+            self.outer_table[k1] = LinearProbeTable(self.internal_sizes)
+            self.outer_table[k1].hash = lambda k: self.hash2(k, self.outer_table[k1])
+
+        # Get the inner table for key1
+        sub_table = self.outer_table[k1]
+        # assign the value to the inner table at key2
+        sub_table[k2] = data
+
+        # Increment count of the outer table
+        self.count += 1
 
     def __delitem__(self, key: tuple[K1, K2]) -> None:
         """
         Deletes a (key, value) pair in our hash table.
-
         :raises KeyError: when the key doesn't exist.
+        :complexity: See linear probe.
         """
-        raise NotImplementedError()
+
+        k1, k2 = key
+        # Delete the value from the inner table at key2
+        del self.outer_table[k1][k2]
+        # If the inner table is empty, delete the inner table from the outer table
+        if len(self.outer_table[k1]) == 0:
+            del self.outer_table[k1]
+
+        # decrement count of the outer table
+        self.count -= 1
 
     def _rehash(self) -> None:
         """
         Need to resize table and reinsert all values
-
-        :complexity best: O(N*hash(K)) No probing.
-        :complexity worst: O(N*hash(K) + N^2*comp(K)) Lots of probing.
-        Where N is len(self)
+        :complexity: See LinearProbeTable implementation
+        This function is not implemented as DoubleKeyTable uses the LinearProbeTable implementation.
         """
-        raise NotImplementedError()
+        pass
 
     def table_size(self) -> int:
         """
         Return the current size of the table (different from the length)
+        :complexity: O(1)
         """
-        raise NotImplementedError()
+
+        return self.outer_table.table_size
 
     def __len__(self) -> int:
         """
         Returns number of elements in the hash table
+        :complexity: O(1)
         """
-        raise NotImplementedError()
+        return self.count
 
     def __str__(self) -> str:
         """
         String representation.
-
         Not required but may be a good testing tool.
         """
-        raise NotImplementedError()
+        # return str(self.outer_table)
+
+        result = ""
+        for i, val in enumerate(self.outer_table.array):
+            if val is None:
+                result += f"{i}, None\n"
+                continue
+            result += f"{i}, {val[0]}, {val[1]}\n"
+        return result
