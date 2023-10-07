@@ -100,12 +100,72 @@ class Trail:
 
     def collect_all_mountains(self) -> list[Mountain]:
         """Returns a list of all mountains on the trail."""
-        raise NotImplementedError()
 
-    def difficulty_maximum_paths(self, max_difficulty: int) -> list[list[Mountain]]: # Input to this should not exceed k > 50, at most 5 branches.
+        mountains = []
+
+        if self.store is None:
+            return mountains
+
+        # If the trail is a series
+        elif isinstance(self.store, TrailSeries):
+            # Add the mountain to the list
+            mountains.append(self.store.mountain)
+            # Collect all the mountains from the following trail and add them to the list
+            mountains.extend(self.store.following.collect_all_mountains())
+
+        # If the trail is a split
+        elif isinstance(self.store, TrailSplit):
+            mountains.extend(self.store.top.collect_all_mountains())
+            mountains.extend(self.store.bottom.collect_all_mountains())
+            mountains.extend(self.store.following.collect_all_mountains())
+
+
+        return mountains
+
+    def difficulty_maximum_paths(self, max_difficulty: int) -> list[list[Mountain]]: 
+        # Input to this should not exceed k > 50, at most 5 branches.
         # 1008/2085 ONLY!
-        raise NotImplementedError()
+        """
+        Returns a list of lists of mountains which are within the maximum difficulty.
+        """
+        return self.difficulty_maximum_paths_aux(max_difficulty, [])
 
-    def difficulty_difference_paths(self, max_difference: int) -> list[list[Mountain]]: # Input to this should not exceed k > 50, at most 5 branches.
-        # 1054 ONLY!
-        raise NotImplementedError()
+
+    def difficulty_maximum_paths_aux(self, max_difficulty: int, current_path: list[Mountain] = []) -> list[list[Mountain]]:
+
+        # Base Cases
+        # If the trail is empty
+        if self.store is None:
+            # print("store is None")
+            return [current_path]
+
+        # Recursive Cases
+        # If the trail is a series
+        elif isinstance(self.store, TrailSeries):
+            if self.store.mountain:
+                # If the mountain is within the maximum difficulty
+                if self.store.mountain.difficulty_level >= max_difficulty:
+                    return []
+                current_path.append(self.store.mountain)
+
+
+            return self.store.following.difficulty_maximum_paths_aux(max_difficulty, current_path)
+
+        # If the trail is a split
+        elif isinstance(self.store, TrailSplit):
+
+            # Collect all the paths from the top branch
+            top_paths = self.store.top.difficulty_maximum_paths_aux(max_difficulty, current_path.copy())
+            bottom_paths = self.store.bottom.difficulty_maximum_paths_aux(max_difficulty, current_path)
+
+            # Add the paths from the bottom branch to the top branch
+            paths = top_paths + bottom_paths
+
+
+            new_paths = []
+            for path in paths:
+                new_paths.extend(self.store.following.difficulty_maximum_paths_aux(max_difficulty, path))
+
+        return new_paths
+
+
