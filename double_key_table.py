@@ -36,7 +36,7 @@ class DoubleKeyTable(Generic[K1, K2, V]):
         self.count = 0
 
         self.outer_table: LinearProbeTable[K1, LinearProbeTable[K2, V]] = LinearProbeTable(self.sizes)
-        self.outer_table.hash = lambda k: self.hash1(k) 
+        self.outer_table.hash = lambda k: self.hash1(k)
 
     def hash1(self, key: K1) -> int:
         """
@@ -44,6 +44,7 @@ class DoubleKeyTable(Generic[K1, K2, V]):
 
         :complexity: O(len(key))
         """
+        # return self.outer_table.hash(key)
 
         value = 0
         a = 31415
@@ -58,6 +59,7 @@ class DoubleKeyTable(Generic[K1, K2, V]):
 
         :complexity: O(len(key))
         """
+        # return sub_table.hash(key)
 
         value = 0
         a = 31415
@@ -72,7 +74,7 @@ class DoubleKeyTable(Generic[K1, K2, V]):
 
         :raises KeyError: When the key pair is not in the table, but is_insert is False.
         :raises FullError: When a table is full and cannot be inserted.
-        
+
         :complexity best: O(hash(key1) + hash(key2)) 
             - Occurs when hash position is empty
         :complexity worst: O(hash(key1) + N*comp(K1) + hash(key2) + M*comp(K2)) 
@@ -93,7 +95,7 @@ class DoubleKeyTable(Generic[K1, K2, V]):
                 self.outer_table[key1] = new_inner_table
             else:
                 raise KeyError(key1)
-
+        
         # get the inner table for key1
         sub_table = self.outer_table[key1]
 
@@ -103,41 +105,20 @@ class DoubleKeyTable(Generic[K1, K2, V]):
             self.outer_table._linear_probe(key1, False),
             sub_table._linear_probe(key2, is_insert)
         )
-
-    def iter_keys(self, key:K1|None=None) -> Iterator[K1|K2]:
-        """
-        key = None:
-            Returns an iterator of all top-level keys in hash table
-        key = k:
-            Returns an iterator of all keys in the bottom-hash-table for k.
-
-        :complexity:
-        Best case = O(n) where 
-            - n is the number of elements in the top table
-            - Occurs when the key is None
-        Worst case = O(hash(key) + m)
-            - m is the number of elements in the bottom table
-            - Occurs when there is a key
-        """
-
-        if key is None:
-            table = self.outer_table
-        else:
-            table = self.outer_table[key]
-
-        for item in table.array:
-            if item is not None:
-                yield item[0]
-
+            
     def keys(self, key:K1|None=None) -> list[K1|K2]:
         """
         key = None: returns all top-level keys in the table.
         key = x: returns all bottom-level keys for top-level key x.
-        Complexity:
-        Best case is O(n) where n is the number of elements in the top table. Occurs when the key is None
-        Worst case is O(hash(key) + m) where m is the number of elements in the bottom table. Occurs when there is a key
+
+        :complexity: 
+        Best case: O(N) where N is the number of keys in the outter table.
+            - Occurs when there is no key given and we have to iterate through the outer table.
+
+        Worse case: O(hash(key) + M) where M is the number of keys in the inner table.
+            - Occurs when there is a key given and the key is in the outer table.
+
         """
-        # return list(self.iter_keys(key))
 
         key_iterator = self.iter_keys(key) 
 
@@ -147,12 +128,57 @@ class DoubleKeyTable(Generic[K1, K2, V]):
 
         return keys
 
+
+    def iter_keys(self, key:K1|None=None) -> Iterator[K1|K2]:
+        """
+        key = None:
+            Returns an iterator of all top-level keys in hash table
+        key = k:
+            Returns an iterator of all keys in the bottom-hash-table for k.
+
+        :raises KeyError: When the key is not in the table.
+
+        :complexity: 
+        Best case: O(N)
+            - N is the number of keys in the outer table.
+
+        Worst case: O(hash(key)) + M
+            - M is the number of keys in the inner table
+
+        """
+        # If key is None, iterate through all top-level keys
+        if key is None:
+            # Iterate through all top-level keys
+            # use array attribute of outer table to iterate through all the keys
+            for tup in self.outer_table.array:
+                # if the key is not None, yield the key
+                # yield is like return but it returns a generator
+                if tup is not None:
+                    yield tup[0]
+
+
+        # Else, iterate through all bottom-level keys for top-level key k
+        else:
+            # if key is not in the outer table, raise a key error
+            if key not in self.outer_table:
+                raise KeyError(key)
+
+            # get the inner table for key
+            sub_table = self.outer_table[key]
+
+            # iterate through the inner table
+            for tup in sub_table.array:
+                if tup is not None:
+                    # tup[0] is the key tup[1] is the value
+                    yield tup[0]
+
     def iter_values(self, key:K1|None=None) -> Iterator[V]:
         """
         key = None:
             Returns an iterator of all values in hash table
         key = k:
             Returns an iterator of all values in the bottom-hash-table for k.
+
         :complexity:
         Best case: O(hash(key) + M)
             - M is the number of keys in the inner table.
@@ -196,23 +222,28 @@ class DoubleKeyTable(Generic[K1, K2, V]):
         key = None: returns all values in the table.
         key = x: returns all values for top-level key x.
 
-        :complexity:
-        Best case = O(hash(key) + n + k)
-            - n is the number of elements in the outer table
-            - k is the number of elements in the generator
-            - Occurs when there is no key
-        Worst case = O(n*m) 
-            - n is the number of elements in the outer table
-            - m is the number of elements in the lower table
-            - Occurs when there is a key
+        :complexity: 
+        Best case = O(hash(key) + N) 
+            - N is the number of keys in the outer table.
+            - Occurs when there is a key given
+
+
+        Worst case = O(N*M) 
+            - N is the number of keys in the inner table
+            - M is the number of keys in the outter table
+            - Occurs when there is no key given and we have to iterate through the outer table
+
         """
+
         values = []
         value_iterator = self.iter_values(key)
 
-        for value in value_iterator:
+        for value in value_iterator: # we can iterate over our iterator
             values.append(value)
 
         return values
+
+
 
     def __contains__(self, key: tuple[K1, K2]) -> bool:
         """
@@ -232,7 +263,9 @@ class DoubleKeyTable(Generic[K1, K2, V]):
         Get the value at a certain key
 
         :raises KeyError: when the key doesn't exist.
+
         :complexity: See linear probe.
+
         """
 
         # K1 = key[0], K2 = key[1]
@@ -241,12 +274,17 @@ class DoubleKeyTable(Generic[K1, K2, V]):
         # KeyError is raised by the LinearProbeTable class
         sub_table = self.outer_table[k1]
         return sub_table[k2]
+    
+
 
     def __setitem__(self, key: tuple[K1, K2], data: V) -> None:
         """
         Set an (key, value) pair in our hash table.
+
         :raises FullError: when the table cannot be resized further.
+
         :complexity: see linear probe.
+
         """
 
         k1, k2 = key
@@ -263,11 +301,14 @@ class DoubleKeyTable(Generic[K1, K2, V]):
 
         # Increment count of the outer table
         self.count += 1
+        
 
     def __delitem__(self, key: tuple[K1, K2]) -> None:
         """
         Deletes a (key, value) pair in our hash table.
+
         :raises KeyError: when the key doesn't exist.
+
         :complexity: See linear probe.
         """
 
@@ -284,14 +325,18 @@ class DoubleKeyTable(Generic[K1, K2, V]):
     def _rehash(self) -> None:
         """
         Need to resize table and reinsert all values
+
         :complexity: See LinearProbeTable implementation
+
         This function is not implemented as DoubleKeyTable uses the LinearProbeTable implementation.
         """
         pass
 
+    @property
     def table_size(self) -> int:
         """
         Return the current size of the table (different from the length)
+
         :complexity: O(1)
         """
 
@@ -300,6 +345,7 @@ class DoubleKeyTable(Generic[K1, K2, V]):
     def __len__(self) -> int:
         """
         Returns number of elements in the hash table
+
         :complexity: O(1)
         """
         return self.count
@@ -307,6 +353,7 @@ class DoubleKeyTable(Generic[K1, K2, V]):
     def __str__(self) -> str:
         """
         String representation.
+
         Not required but may be a good testing tool.
         """
         # return str(self.outer_table)

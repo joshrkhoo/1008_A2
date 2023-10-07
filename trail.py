@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from mountain import Mountain
+from data_structures.linked_stack import LinkedStack
 
 from typing import TYPE_CHECKING, Union
 
@@ -25,7 +26,7 @@ class TrailSplit:
 
     def remove_branch(self) -> TrailStore:
         """Removes the branch, should just leave the remaining following trail."""
-        raise NotImplementedError()
+        return self.following.store
 
 @dataclass
 class TrailSeries:
@@ -44,34 +45,54 @@ class TrailSeries:
         Returns a *new* trail which would be the result of:
         Removing the mountain at the beginning of this series.
         """
-        raise NotImplementedError()
+        return self.following.store
 
     def add_mountain_before(self, mountain: Mountain) -> TrailStore:
         """
         Returns a *new* trail which would be the result of:
         Adding a mountain in series before the current one.
         """
-        raise NotImplementedError()
+        # Adds a mountain before the current Trail series
+        return TrailSeries(mountain=mountain, 
+                           following=Trail(TrailSeries(
+                               mountain=self.mountain, 
+                               following=self.following)))
 
     def add_empty_branch_before(self) -> TrailStore:
         """Returns a *new* trail which would be the result of:
         Adding an empty branch, where the current trailstore is now the following path.
         """
-        raise NotImplementedError()
+        # top is empty 
+        # bottom is empty
+        # following is the current trail
+        return TrailSplit(top=Trail(None), 
+                          bottom=Trail(None), 
+                          following=Trail(TrailSeries(
+                              mountain=self.mountain, 
+                              following=self.following)))
 
     def add_mountain_after(self, mountain: Mountain) -> TrailStore:
         """
         Returns a *new* trail which would be the result of:
         Adding a mountain after the current mountain, but before the following trail.
         """
-        raise NotImplementedError()
+        # current mountain -> new mountain -> following trail
+        return TrailSeries(mountain=self.mountain, 
+                           following=Trail(TrailSeries(
+                               mountain=mountain, 
+                               following=self.following)))
 
     def add_empty_branch_after(self) -> TrailStore:
         """
         Returns a *new* trail which would be the result of:
         Adding an empty branch after the current mountain, but before the following trail.
         """
-        raise NotImplementedError()
+        # current mountain -> empty branch -> following trail
+        return TrailSeries(mountain=self.mountain, 
+                           following=Trail(TrailSplit(
+                            top=Trail(None), 
+                            bottom=Trail(None), 
+                            following=self.following)))
 
 TrailStore = Union[TrailSplit, TrailSeries, None]
 
@@ -85,18 +106,57 @@ class Trail:
         Returns a *new* trail which would be the result of:
         Adding a mountain before everything currently in the trail.
         """
-        raise NotImplementedError()
+        return Trail(TrailSeries(mountain=mountain, 
+                                 following=self))
 
     def add_empty_branch_before(self) -> Trail:
         """
         Returns a *new* trail which would be the result of:
         Adding an empty branch before everything currently in the trail.
         """
-        raise NotImplementedError()
+
+        return Trail(TrailSplit(top=Trail(None), 
+                                    bottom=Trail(None), 
+                                    following=self))
 
     def follow_path(self, personality: WalkerPersonality) -> None:
-        """Follow a path and add mountains according to a personality."""
-        raise NotImplementedError()
+        """Follow a path and add mountains according to a personality.
+        
+        Complexity:
+        Best = O(n) where n is the number of TrailSeries in the path. This occurs when the path has no TrailSplits
+        Worst = O(n + m) where n is the number of TrailSeries and m is the number of TrailSplits in the path
+        """
+        from personality import PersonalityDecision, TopWalker, BottomWalker, LazyWalker
+
+        # operations are all O(1)
+        current_store = self.store # self is a Trail so self.store will be a TrailSplit, TrailSeries or None
+
+        stack = LinkedStack() # use a stack to explore the parts of a split
+        # a linked implementation is used rather than an array implementation because we don't know how many splits the trail will have
+
+        while True:
+            # if current_store is a TrailSeries, we'll always go through the mountain
+            if isinstance(current_store, TrailSeries):
+                personality.add_mountain(current_store.mountain) # O(1)
+                # now need to update the current_store to the next part of the trail which would be the 'following' part
+                current_store = current_store.following.store # Some TrailStore
+                # current_store.following is a Trail
+                # so current_store.following.store will get the TrailStore which will be a TrailSplit, TrailSeries or None
+
+            if isinstance(current_store, TrailSplit):
+                stack.push(current_store)
+                decision = personality.select_branch(current_store.top, current_store.bottom)
+
+                if decision == PersonalityDecision.TOP:
+                    current_store = current_store.top.store # Some TrailStore
+                    # current_store.top is a Trail
+                elif decision == PersonalityDecision.BOTTOM:
+                    current_store = current_store.bottom.store # Some TrailStore
+                    # current_store.bottom is a Trail
+                elif decision == PersonalityDecision.STOP:
+                    break
+
+
 
     def collect_all_mountains(self) -> list[Mountain]:
         """Returns a list of all mountains on the trail."""
