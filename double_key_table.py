@@ -28,7 +28,15 @@ class DoubleKeyTable(Generic[K1, K2, V]):
     HASH_BASE = 31
 
     def __init__(self, sizes:list|None=None, internal_sizes:list|None=None) -> None:
-        raise NotImplementedError()
+
+
+        self.sizes = sizes or self.TABLE_SIZES
+        self.internal_sizes = internal_sizes or self.TABLE_SIZES
+
+        self.count = 0
+
+        self.outer_table: LinearProbeTable[K1, LinearProbeTable[K2, V]] = LinearProbeTable(self.sizes)
+        self.outer_table.hash = lambda k: self.hash1(k) 
 
     def hash1(self, key: K1) -> int:
         """
@@ -64,8 +72,37 @@ class DoubleKeyTable(Generic[K1, K2, V]):
 
         :raises KeyError: When the key pair is not in the table, but is_insert is False.
         :raises FullError: When a table is full and cannot be inserted.
+        
+        :complexity best: O(hash(key1) + hash(key2)) 
+            - Occurs when hash position is empty
+        :complexity worst: O(hash(key1) + N*comp(K1) + hash(key2) + M*comp(K2)) 
+            - Occurs when we have to search the entire table
+            - N is the size of the outer table, M is the size of the inner table
         """
-        raise NotImplementedError()
+
+        # If statement checks if outer table has key1 and if it doesnt then we either add it or raise a key error
+        if key1 not in self.outer_table:
+            if is_insert:
+                # if is_insert is True and there is no inner table for key1, create a new inner table
+                new_inner_table = LinearProbeTable(self.internal_sizes)
+                # set the hash function of the new inner table to be the hash2 function
+                new_inner_table.hash = lambda k: self.hash2(k, new_inner_table)
+                # insert the new inner table into the outer table at key1
+                    # essentially, key 1 and the new inner table get inserted into the outer table
+                    # key1 just points to the new inner table
+                self.outer_table[key1] = new_inner_table
+            else:
+                raise KeyError(key1)
+
+        # get the inner table for key1
+        sub_table = self.outer_table[key1]
+
+        # return the position of key1 and key2
+            # Uses the linear probe function implemented in the LinearProbeTable class
+        return (
+            self.outer_table._linear_probe(key1, False),
+            sub_table._linear_probe(key2, is_insert)
+        )
 
     def iter_keys(self, key:K1|None=None) -> Iterator[K1|K2]:
         """
