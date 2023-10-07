@@ -209,7 +209,7 @@ class DoubleKeyTable(Generic[K1, K2, V]):
         values = []
         value_iterator = self.iter_values(key)
 
-        for value in value_iterator: # we can iterate over our iterator
+        for value in value_iterator:
             values.append(value)
 
         return values
