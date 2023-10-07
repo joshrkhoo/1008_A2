@@ -120,41 +120,55 @@ class Trail:
                                     following=self))
 
     def follow_path(self, personality: WalkerPersonality) -> None:
-        """Follow a path and add mountains according to a personality.
-        
-        Complexity:
-        Best = O(n) where n is the number of TrailSeries in the path. This occurs when the path has no TrailSplits
-        Worst = O(n + m) where n is the number of TrailSeries and m is the number of TrailSplits in the path
-        """
-        from personality import PersonalityDecision, TopWalker, BottomWalker, LazyWalker
+        """Follow a path and add mountains according to a personality."""
 
-        # operations are all O(1)
-        current_store = self.store # self is a Trail so self.store will be a TrailSplit, TrailSeries or None
+        from personality import PersonalityDecision
 
-        stack = LinkedStack() # use a stack to explore the parts of a split
-        # a linked implementation is used rather than an array implementation because we don't know how many splits the trail will have
+
+        current = self.store
+        stack = LinkedStack()
 
         while True:
-            # if current_store is a TrailSeries, we'll always go through the mountain
-            if isinstance(current_store, TrailSeries):
-                personality.add_mountain(current_store.mountain) # O(1)
-                # now need to update the current_store to the next part of the trail which would be the 'following' part
-                current_store = current_store.following.store # Some TrailStore
-                # current_store.following is a Trail
-                # so current_store.following.store will get the TrailStore which will be a TrailSplit, TrailSeries or None
 
-            if isinstance(current_store, TrailSplit):
-                stack.push(current_store)
-                decision = personality.select_branch(current_store.top, current_store.bottom)
+            # If the current trail is a series 
+            if isinstance(current, TrailSeries):
+                # Add the mountain to the personality
+                personality.add_mountain(current.mountain)
+                # Move to the next trail
+                current = current.following.store
 
+                # If the next trail is empty
+                if current is None: 
+                    # If the stack is empty, break
+                    if stack.is_empty():
+                        break
+                    # Else, pop the stack and move to the next trail
+                    # Pop to get the TrailSplit object from the stack
+                    split = stack.pop()
+                    current = split.following.store
+
+
+            # If the current trail is a split
+            if isinstance(current, TrailSplit):
+                # Push the current trail to the stack
+                stack.push(current)
+                # Get the personality type
+                decision = personality.select_branch(current.top, current.bottom)
+
+                # Assign current to the next trail
                 if decision == PersonalityDecision.TOP:
-                    current_store = current_store.top.store # Some TrailStore
-                    # current_store.top is a Trail
+                    current = current.top.store
                 elif decision == PersonalityDecision.BOTTOM:
-                    current_store = current_store.bottom.store # Some TrailStore
-                    # current_store.bottom is a Trail
-                elif decision == PersonalityDecision.STOP:
+                    current = current.bottom.store
+                else:
                     break
+
+            # If the current trail is empty
+            if current is None:
+                # Get the next trail object from the stack
+                split = stack.pop()
+                # update the current to that trail
+                current = split.following.store
 
 
 
