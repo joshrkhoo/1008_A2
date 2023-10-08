@@ -134,52 +134,41 @@ class Trail:
         """
 
         from personality import PersonalityDecision
+        
+        # operations are all O(1)
+        current_store = self.store # self is a Trail so self.store will be a TrailSplit, TrailSeries or None
 
-
-        current = self.store
-        stack = LinkedStack()
+        stack = LinkedStack() # use a stack to explore the parts of a split
+        # a linked implementation is used rather than an array implementation because we don't know how many splits the trail will have
 
         while True:
+            # if current_store is a TrailSeries, we'll always go through the mountain
+            if isinstance(current_store, TrailSeries):
+                personality.add_mountain(current_store.mountain) # O(1)
+                # now need to update the current_store to the next part of the trail which would be the 'following' part
+                current_store = current_store.following.store # Some TrailStore
+                # current_store.following is a Trail
+                # so current_store.following.store will get the TrailStore which will be a TrailSplit, TrailSeries or None
 
-            # If the current trail is a series 
-            if isinstance(current, TrailSeries):
-                # Add the mountain to the personality
-                personality.add_mountain(current.mountain)
-                # Move to the next trail
-                current = current.following.store
+            if isinstance(current_store, TrailSplit):
+                stack.push(current_store)
+                decision = personality.select_branch(current_store.top, current_store.bottom)
 
-                # If the next trail is empty
-                if current is None: 
-                    # If the stack is empty, break
-                    if stack.is_empty():
-                        break
-                    # Else, pop the stack and move to the next trail
-                    # Pop to get the TrailSplit object from the stack
-                    split = stack.pop()
-                    current = split.following.store
-
-
-            # If the current trail is a split
-            if isinstance(current, TrailSplit):
-                # Push the current trail to the stack
-                stack.push(current)
-                # Get the personality type
-                decision = personality.select_branch(current.top, current.bottom)
-
-                # Assign current to the next trail
                 if decision == PersonalityDecision.TOP:
-                    current = current.top.store
+                    current_store = current_store.top.store # Some TrailStore
+                    # current_store.top is a Trail
                 elif decision == PersonalityDecision.BOTTOM:
-                    current = current.bottom.store
-                else:
+                    current_store = current_store.bottom.store # Some TrailStore
+                    # current_store.bottom is a Trail
+                elif decision == PersonalityDecision.STOP:
                     break
 
-            # If the current trail is empty
-            if current is None:
-                # Get the next trail object from the stack
+            if current_store is None: # we could be at the end of a split or the trail itself
+                if stack.is_empty(): # there are no splits at where we are in the trail - we are at the end
+                    break
+                # we reached the end of a branch in the split
                 split = stack.pop()
-                # update the current to that trail
-                current = split.following.store
+                current_store = split.following.store # go to the following
 
 
 
